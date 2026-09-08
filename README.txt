@@ -14,3 +14,9 @@ Khi phát hành bản mới:
 2. Tăng APP_VERSION trong service-worker.js, ví dụ 1.1.0 -> 1.1.1.
 3. Upload lại toàn bộ thư mục lên hosting HTTPS.
 4. Người dùng đang mở app sẽ thấy nút “Cập nhật” khi trình duyệt tải được Service Worker mới.
+
+
+BẢN 1.1.1:
+- Nút Cài đặt luôn hiển thị khi mở trong trình duyệt.
+- Nếu mở trực tiếp file://, bấm Cài đặt sẽ giải thích cần HTTPS/localhost.
+- Khi đủ điều kiện PWA, nút sẽ gọi hộp cài đặt của Chrome/Edge.

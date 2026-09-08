@@ -578,7 +578,7 @@
       <button class="btn" id="undoBtn" title="Hoàn tác">↶</button>
       <button class="btn" id="redoBtn" title="Làm lại">↷</button>
       <button class="btn" id="saveBtn">💾 Lưu</button>
-      <button class="btn pwa-btn attention" id="installBtn" type="button" hidden>⬇ Cài đặt<span class="pwa-dot" aria-hidden="true"></span></button>
+      <button class="btn pwa-btn attention" id="installBtn" type="button" title="Cài GPP Sơ đồ lên thiết bị">⬇ Cài đặt<span class="pwa-dot" aria-hidden="true"></span></button>
       <button class="btn pwa-btn update-ready" id="updateBtn" type="button" hidden>↻ Cập nhật<span class="pwa-dot" aria-hidden="true"></span></button>
       <button class="btn primary" id="printBtn">🖨 In</button>
     </div>
@@ -1311,12 +1311,11 @@
 
   function refreshInstallButton() {
     if (!installBtn) return;
-    if (isStandaloneMode()) {
-      installBtn.hidden = true;
-      return;
-    }
-    // iPhone/iPad không phát beforeinstallprompt, vẫn hiện nút để hướng dẫn.
-    installBtn.hidden = !(deferredInstallPrompt || isIOS());
+    // Luôn hiện nút khi đang chạy trong trình duyệt. Chỉ ẩn sau khi app đã được cài
+    // và đang mở ở chế độ standalone. Như vậy người dùng không còn phải chờ
+    // beforeinstallprompt mới nhìn thấy nút Cài đặt.
+    installBtn.hidden = isStandaloneMode();
+    installBtn.classList.toggle('attention', !!deferredInstallPrompt || !isStandaloneMode());
   }
 
   window.addEventListener('beforeinstallprompt', e => {
@@ -1350,10 +1349,14 @@
       return;
     }
 
-    if (isIOS()) {
-      installHelpText.textContent = 'Trên iPhone/iPad: nhấn nút Chia sẻ của Safari → chọn “Thêm vào Màn hình chính” → nhấn “Thêm”.';
+    if (location.protocol === 'file:') {
+      installHelpText.textContent = 'Bạn đang mở file HTML trực tiếp (file://), nên trình duyệt không cho cài PWA. Nút Cài đặt vẫn luôn hiện để dễ thao tác. Muốn cài thật lên Desktop/Taskbar, hãy mở ứng dụng từ website HTTPS hoặc localhost bằng Chrome/Edge, sau đó bấm lại Cài đặt.';
+    } else if (isIOS()) {
+      installHelpText.textContent = 'Trên iPhone/iPad: mở bằng Safari → nhấn Chia sẻ → chọn “Thêm vào Màn hình chính” → nhấn “Thêm”.';
+    } else if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+      installHelpText.textContent = 'Trình duyệt yêu cầu HTTPS (hoặc localhost) để cài ứng dụng. Hãy mở GPP Sơ đồ từ địa chỉ HTTPS rồi bấm lại Cài đặt.';
     } else {
-      installHelpText.textContent = 'Mở menu của Chrome/Edge → chọn “Cài đặt GPP Sơ đồ” hoặc biểu tượng cài đặt ở bên phải thanh địa chỉ.';
+      installHelpText.textContent = 'Nếu hộp cài chưa bật tự động, mở menu Chrome/Edge → chọn “Cài đặt GPP Sơ đồ” hoặc biểu tượng cài ứng dụng ở bên phải thanh địa chỉ. Sau khi trang đủ điều kiện, nút này sẽ mở hộp cài trực tiếp.';
     }
     installHelpPanel.hidden = false;
   });
