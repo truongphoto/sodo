@@ -468,6 +468,7 @@
       position: relative;
       white-space: nowrap;
     }
+    .pwa-btn[hidden] { display: none !important; }
     .pwa-btn.attention {
       border-color: #8fb0ff;
       background: #eef4ff;
@@ -578,7 +579,7 @@
       <button class="btn" id="undoBtn" title="Hoàn tác">↶</button>
       <button class="btn" id="redoBtn" title="Làm lại">↷</button>
       <button class="btn" id="saveBtn">💾 Lưu</button>
-      <button class="btn pwa-btn attention" id="installBtn" type="button" title="Cài GPP Sơ đồ lên thiết bị">⬇ Cài đặt<span class="pwa-dot" aria-hidden="true"></span></button>
+      <button class="btn pwa-btn attention" id="installBtn" type="button" title="Cài GPP Sơ đồ lên thiết bị" hidden>⬇ Cài đặt<span class="pwa-dot" aria-hidden="true"></span></button>
       <button class="btn pwa-btn update-ready" id="updateBtn" type="button" hidden>↻ Cập nhật<span class="pwa-dot" aria-hidden="true"></span></button>
       <button class="btn primary" id="printBtn">🖨 In</button>
     </div>
@@ -672,13 +673,6 @@
   </div>
 </div>
 
-<div class="pwa-panel" id="installHelpPanel" hidden role="dialog" aria-label="Hướng dẫn cài ứng dụng">
-  <div class="pwa-panel-title"><span class="pwa-panel-icon">⬇</span><span>Cài GPP Sơ đồ</span></div>
-  <p id="installHelpText">Mở menu của trình duyệt và chọn “Cài đặt ứng dụng” hoặc “Thêm vào màn hình chính”.</p>
-  <div class="pwa-panel-actions">
-    <button class="btn primary" id="closeInstallHelpBtn" type="button">Đã hiểu</button>
-  </div>
-</div>
 
 <script>
 (() => {
@@ -1292,9 +1286,6 @@
   const updatePanel = document.getElementById('updatePanel');
   const applyUpdateBtn = document.getElementById('applyUpdateBtn');
   const laterUpdateBtn = document.getElementById('laterUpdateBtn');
-  const installHelpPanel = document.getElementById('installHelpPanel');
-  const installHelpText = document.getElementById('installHelpText');
-  const closeInstallHelpBtn = document.getElementById('closeInstallHelpBtn');
 
   let deferredInstallPrompt = null;
   let swRegistration = null;
@@ -1305,17 +1296,14 @@
            window.navigator.standalone === true;
   }
 
-  function isIOS() {
-    return /iphone|ipad|ipod/i.test(navigator.userAgent);
-  }
 
   function refreshInstallButton() {
     if (!installBtn) return;
-    // Luôn hiện nút khi đang chạy trong trình duyệt. Chỉ ẩn sau khi app đã được cài
-    // và đang mở ở chế độ standalone. Như vậy người dùng không còn phải chờ
-    // beforeinstallprompt mới nhìn thấy nút Cài đặt.
-    installBtn.hidden = isStandaloneMode();
-    installBtn.classList.toggle('attention', !!deferredInstallPrompt || !isStandaloneMode());
+    // Chỉ hiện khi trình duyệt đã xác nhận app đủ điều kiện cài đặt.
+    // Nhờ vậy bấm Cài đặt luôn mở hộp cài thật, không hiện hộp hướng dẫn giả.
+    const canInstall = !!deferredInstallPrompt && !isStandaloneMode();
+    installBtn.hidden = !canInstall;
+    installBtn.classList.toggle('attention', canInstall);
   }
 
   window.addEventListener('beforeinstallprompt', e => {
@@ -1336,33 +1324,24 @@
   });
 
   installBtn?.addEventListener('click', async () => {
-    if (deferredInstallPrompt) {
-      deferredInstallPrompt.prompt();
-      const result = await deferredInstallPrompt.userChoice;
-      if (result.outcome === 'accepted') {
-        showToast('Đang hoàn tất cài đặt');
-      } else {
-        showToast('Bạn có thể cài lại bất cứ lúc nào');
-      }
-      deferredInstallPrompt = null;
+    if (!deferredInstallPrompt) {
       refreshInstallButton();
       return;
     }
 
-    if (location.protocol === 'file:') {
-      installHelpText.textContent = 'Bạn đang mở file HTML trực tiếp (file://), nên trình duyệt không cho cài PWA. Nút Cài đặt vẫn luôn hiện để dễ thao tác. Muốn cài thật lên Desktop/Taskbar, hãy mở ứng dụng từ website HTTPS hoặc localhost bằng Chrome/Edge, sau đó bấm lại Cài đặt.';
-    } else if (isIOS()) {
-      installHelpText.textContent = 'Trên iPhone/iPad: mở bằng Safari → nhấn Chia sẻ → chọn “Thêm vào Màn hình chính” → nhấn “Thêm”.';
-    } else if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-      installHelpText.textContent = 'Trình duyệt yêu cầu HTTPS (hoặc localhost) để cài ứng dụng. Hãy mở GPP Sơ đồ từ địa chỉ HTTPS rồi bấm lại Cài đặt.';
-    } else {
-      installHelpText.textContent = 'Nếu hộp cài chưa bật tự động, mở menu Chrome/Edge → chọn “Cài đặt GPP Sơ đồ” hoặc biểu tượng cài ứng dụng ở bên phải thanh địa chỉ. Sau khi trang đủ điều kiện, nút này sẽ mở hộp cài trực tiếp.';
-    }
-    installHelpPanel.hidden = false;
-  });
+    const promptEvent = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    refreshInstallButton();
 
-  closeInstallHelpBtn?.addEventListener('click', () => {
-    installHelpPanel.hidden = true;
+    try {
+      await promptEvent.prompt();
+      const result = await promptEvent.userChoice;
+      if (result.outcome === 'accepted') {
+        showToast('Đã xác nhận cài đặt');
+      }
+    } catch (err) {
+      console.error('Không thể mở hộp cài PWA:', err);
+    }
   });
 
   function showUpdateAvailable(reg) {
