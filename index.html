@@ -2,7 +2,18 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#1a5cff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="GPP Sơ đồ" />
+  <meta name="application-name" content="GPP Sơ đồ" />
+  <meta name="description" content="Trợ lý vẽ sơ đồ bố trí cơ sở bán lẻ thuốc GPP." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="./icons/gpp-icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
   <title>Trợ lý vẽ sơ đồ GPP</title>
   <style>
     :root {
@@ -452,6 +463,82 @@
 
     .mobile-note { display: none; }
 
+    /* ---- PWA: Cài đặt & cập nhật ---- */
+    .pwa-btn {
+      position: relative;
+      white-space: nowrap;
+    }
+    .pwa-btn.attention {
+      border-color: #8fb0ff;
+      background: #eef4ff;
+      color: #1246c8;
+      box-shadow: 0 0 0 3px rgba(26,92,255,.08);
+    }
+    .pwa-btn.update-ready {
+      border-color: #f2b84b;
+      background: #fff8e8;
+      color: #8a5a00;
+    }
+    .pwa-dot {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      right: 4px;
+      top: 3px;
+      background: currentColor;
+      box-shadow: 0 0 0 2px #fff;
+    }
+    .pwa-panel {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: min(360px, calc(100vw - 32px));
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 18px 50px rgba(0,20,40,.18);
+      padding: 14px;
+      z-index: 80;
+    }
+    .pwa-panel[hidden] { display: none !important; }
+    .pwa-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    .pwa-panel-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      background: #eef4ff;
+      color: var(--accent);
+      font-size: 18px;
+      flex: 0 0 auto;
+    }
+    .pwa-panel p {
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--muted);
+      margin: 4px 0 10px;
+    }
+    .pwa-panel-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .pwa-version {
+      font-size: 9px;
+      color: #8a98a8;
+      margin-top: 8px;
+      text-align: right;
+    }
+
     @media (max-width: 1080px) {
       .app { grid-template-columns: 190px 1fr 190px; }
     }
@@ -467,7 +554,7 @@
     @media print {
       @page { size: A4 portrait; margin: 0; }
       body { background: #fff; }
-      .topbar, .sidebar, .mobile-note, .toast { display: none !important; }
+      .topbar, .sidebar, .mobile-note, .toast, .pwa-panel { display: none !important; }
       .app { display: block; height: auto; overflow: visible; }
       .workspace { padding: 0; overflow: visible; }
       .paper-wrap { min-width: 0; }
@@ -491,6 +578,8 @@
       <button class="btn" id="undoBtn" title="Hoàn tác">↶</button>
       <button class="btn" id="redoBtn" title="Làm lại">↷</button>
       <button class="btn" id="saveBtn">💾 Lưu</button>
+      <button class="btn pwa-btn attention" id="installBtn" type="button" hidden>⬇ Cài đặt<span class="pwa-dot" aria-hidden="true"></span></button>
+      <button class="btn pwa-btn update-ready" id="updateBtn" type="button" hidden>↻ Cập nhật<span class="pwa-dot" aria-hidden="true"></span></button>
       <button class="btn primary" id="printBtn">🖨 In</button>
     </div>
   </header>
@@ -573,6 +662,23 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="pwa-panel" id="updatePanel" hidden role="dialog" aria-live="polite" aria-label="Cập nhật ứng dụng">
+  <div class="pwa-panel-title"><span class="pwa-panel-icon">↻</span><span>Có bản cập nhật mới</span></div>
+  <p>Phiên bản mới của GPP Sơ đồ đã sẵn sàng. Dữ liệu bạn đã lưu trên máy vẫn được giữ nguyên.</p>
+  <div class="pwa-panel-actions">
+    <button class="btn" id="laterUpdateBtn" type="button">Để sau</button>
+    <button class="btn primary" id="applyUpdateBtn" type="button">Cập nhật ngay</button>
+  </div>
+</div>
+
+<div class="pwa-panel" id="installHelpPanel" hidden role="dialog" aria-label="Hướng dẫn cài ứng dụng">
+  <div class="pwa-panel-title"><span class="pwa-panel-icon">⬇</span><span>Cài GPP Sơ đồ</span></div>
+  <p id="installHelpText">Mở menu của trình duyệt và chọn “Cài đặt ứng dụng” hoặc “Thêm vào màn hình chính”.</p>
+  <div class="pwa-panel-actions">
+    <button class="btn primary" id="closeInstallHelpBtn" type="button">Đã hiểu</button>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -1179,6 +1285,149 @@
     if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'c' && state.selected) { e.preventDefault(); document.getElementById('copyItem')?.click(); }
     if ((e.key === 'Delete' || e.key === 'Backspace') && state.selected) { e.preventDefault(); document.getElementById('deleteItem')?.click(); }
   });
+
+  // === PWA: CÀI ĐẶT / CẬP NHẬT ===
+  const installBtn = document.getElementById('installBtn');
+  const updateBtn = document.getElementById('updateBtn');
+  const updatePanel = document.getElementById('updatePanel');
+  const applyUpdateBtn = document.getElementById('applyUpdateBtn');
+  const laterUpdateBtn = document.getElementById('laterUpdateBtn');
+  const installHelpPanel = document.getElementById('installHelpPanel');
+  const installHelpText = document.getElementById('installHelpText');
+  const closeInstallHelpBtn = document.getElementById('closeInstallHelpBtn');
+
+  let deferredInstallPrompt = null;
+  let swRegistration = null;
+  let refreshingForUpdate = false;
+
+  function isStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent);
+  }
+
+  function refreshInstallButton() {
+    if (!installBtn) return;
+    if (isStandaloneMode()) {
+      installBtn.hidden = true;
+      return;
+    }
+    // iPhone/iPad không phát beforeinstallprompt, vẫn hiện nút để hướng dẫn.
+    installBtn.hidden = !(deferredInstallPrompt || isIOS());
+  }
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    refreshInstallButton();
+    if (!sessionStorage.getItem('gpp-install-reminded')) {
+      sessionStorage.setItem('gpp-install-reminded', '1');
+      setTimeout(() => showToast('Có thể cài GPP Sơ đồ lên máy'), 1200);
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    localStorage.setItem('gpp-pwa-installed', '1');
+    refreshInstallButton();
+    showToast('Đã cài GPP Sơ đồ');
+  });
+
+  installBtn?.addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const result = await deferredInstallPrompt.userChoice;
+      if (result.outcome === 'accepted') {
+        showToast('Đang hoàn tất cài đặt');
+      } else {
+        showToast('Bạn có thể cài lại bất cứ lúc nào');
+      }
+      deferredInstallPrompt = null;
+      refreshInstallButton();
+      return;
+    }
+
+    if (isIOS()) {
+      installHelpText.textContent = 'Trên iPhone/iPad: nhấn nút Chia sẻ của Safari → chọn “Thêm vào Màn hình chính” → nhấn “Thêm”.';
+    } else {
+      installHelpText.textContent = 'Mở menu của Chrome/Edge → chọn “Cài đặt GPP Sơ đồ” hoặc biểu tượng cài đặt ở bên phải thanh địa chỉ.';
+    }
+    installHelpPanel.hidden = false;
+  });
+
+  closeInstallHelpBtn?.addEventListener('click', () => {
+    installHelpPanel.hidden = true;
+  });
+
+  function showUpdateAvailable(reg) {
+    swRegistration = reg || swRegistration;
+    if (updateBtn) updateBtn.hidden = false;
+    if (updatePanel && !sessionStorage.getItem('gpp-update-deferred')) {
+      updatePanel.hidden = false;
+    }
+  }
+
+  function applyWaitingUpdate() {
+    if (!swRegistration?.waiting) {
+      swRegistration?.update?.();
+      showToast('Đang kiểm tra bản mới');
+      return;
+    }
+    refreshingForUpdate = true;
+    swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+
+  updateBtn?.addEventListener('click', () => {
+    sessionStorage.removeItem('gpp-update-deferred');
+    if (swRegistration?.waiting) updatePanel.hidden = false;
+    else swRegistration?.update?.();
+  });
+
+  applyUpdateBtn?.addEventListener('click', applyWaitingUpdate);
+  laterUpdateBtn?.addEventListener('click', () => {
+    updatePanel.hidden = true;
+    sessionStorage.setItem('gpp-update-deferred', '1');
+    showToast('Nút Cập nhật vẫn được giữ trên thanh công cụ');
+  });
+
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshingForUpdate) window.location.reload();
+    });
+
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+        swRegistration = reg;
+
+        if (reg.waiting && navigator.serviceWorker.controller) showUpdateAvailable(reg);
+
+        reg.addEventListener('updatefound', () => {
+          const worker = reg.installing;
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateAvailable(reg);
+            }
+          });
+        });
+
+        // Kiểm tra khi quay lại ứng dụng + định kỳ để người dùng không bỏ lỡ bản cập nhật.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+        window.addEventListener('focus', () => reg.update().catch(() => {}));
+        setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
+      } catch (err) {
+        console.warn('Không thể đăng ký Service Worker:', err);
+      }
+    });
+  }
+
+  refreshInstallButton();
 
   // === KHỞI TẠO (trang trống) ===
   makeLibrary();
