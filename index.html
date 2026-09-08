@@ -1,0 +1,1194 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trợ lý vẽ sơ đồ GPP</title>
+  <style>
+    :root {
+      --bg: #f2f5f9;
+      --panel: #fff;
+      --ink: #1a2634;
+      --muted: #6b7a8a;
+      --line: #dde3ed;
+      --accent: #1a5cff;
+      --danger: #d14545;
+      --ok: #1d8b5e;
+      --shadow: 0 8px 24px rgba(0, 20, 40, .08);
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      height: 100vh;
+      overflow: hidden;
+    }
+    button, input { font: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 220px 1fr 220px;
+      grid-template-rows: 52px 1fr;
+      height: 100vh;
+      gap: 0;
+    }
+
+    .topbar {
+      grid-column: 1 / -1;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 10;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 900;
+    }
+    .brand small {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--ink);
+      transition: .15s;
+    }
+    .btn:hover { background: #f0f4fe; border-color: #b3c9ff; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.primary:hover { background: #0044d4; }
+    .btn.danger { color: var(--danger); }
+    .btn.danger:hover { background: #fee8e8; }
+
+    .sidebar {
+      background: var(--panel);
+      padding: 14px 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .sidebar-left {
+      border-right: 1px solid var(--line);
+      grid-column: 1;
+      grid-row: 2;
+    }
+    .sidebar-right {
+      border-left: 1px solid var(--line);
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .section h3 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .library {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .lib-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 4px;
+      min-height: 50px;
+      cursor: grab;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.2;
+      background: #fafcff;
+      transition: .1s;
+      user-select: none;
+    }
+    .lib-item:hover { border-color: var(--accent); background: #f2f7ff; }
+    .lib-icon { font-size: 16px; margin-bottom: 2px; }
+
+    .inspector {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fafcff;
+      font-size: 12px;
+    }
+    .inspector.empty { color: var(--muted); }
+    .field { margin: 8px 0; }
+    .field label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+    .field input[type="range"] { width: 100%; height: 4px; }
+
+    .mini-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .mini-actions .btn { padding: 6px; font-size: 11px; }
+
+    .statusbox {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .status-head {
+      padding: 8px 12px;
+      background: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .status-list { padding: 6px 10px; }
+    .status-row {
+      display: flex;
+      gap: 6px;
+      font-size: 10px;
+      padding: 4px 0;
+      color: var(--muted);
+    }
+    .status-row.ok { color: var(--ok); font-weight: 700; }
+
+    .workspace {
+      grid-column: 2;
+      grid-row: 2;
+      padding: 16px;
+      overflow: auto;
+      background: var(--bg);
+    }
+    .paper-wrap {
+      display: flex;
+      justify-content: center;
+      min-width: 700px;
+    }
+    .paper {
+      width: 740px;
+      min-height: 1000px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      padding: 40px 48px 32px;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    /* ---- Văn bản pháp luật (giữ nguyên chính xác) ---- */
+    .doc-title { text-align: center; margin-bottom: 12px; }
+    .doc-title .country {
+      font-family: "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .doc-title .motto {
+      font-family: "Times New Roman", serif;
+      font-weight: 700;
+      text-decoration: underline;
+      font-size: 14px;
+      margin-top: 2px;
+    }
+    .doc-title h1 {
+      font-family: "Times New Roman", serif;
+      font-size: 16px;
+      margin: 14px 0 12px;
+    }
+
+    .meta {
+      font-family: "Times New Roman", serif;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .meta-row {
+      display: grid;
+      grid-template-columns: 155px 1fr;
+      align-items: end;
+      margin: 2px 0;
+    }
+    .meta-row label {
+      font-weight: 700;
+      white-space: pre;
+    }
+    .meta-row input {
+      border: 0;
+      border-bottom: 1px dotted #888;
+      padding: 0 4px 1px;
+      outline: none;
+      background: transparent;
+      font-size: 13px;
+      font-family: "Times New Roman", serif;
+    }
+    .meta-area {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-area input {
+      width: 80px;
+      border-bottom: 1px dotted #888;
+      border-top: 0;
+      border-left: 0;
+      border-right: 0;
+      background: transparent;
+      outline: none;
+      padding: 0 4px;
+      font-family: "Times New Roman", serif;
+      font-size: 13px;
+    }
+    .meta-area span {
+      font-family: "Times New Roman", serif;
+      font-size: 13px;
+    }
+    .meta-note {
+      font-size: 12px;
+      margin-top: 4px;
+      color: #3d4a5a;
+    }
+    .meta-note span {
+      border-bottom: 1px dotted #888;
+      padding: 0 6px;
+    }
+
+    .part-title {
+      font-family: "Times New Roman", serif;
+      font-weight: 700;
+      font-size: 14px;
+      margin: 6px 0 6px;
+    }
+
+    .layout-box {
+      border: 2px solid #111;
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      height: 400px;
+    }
+    .legend {
+      border-right: 1px solid #111;
+      padding: 8px 6px;
+      font-family: "Times New Roman", serif;
+      font-size: 11px;
+      line-height: 1.5;
+      overflow-y: auto;
+    }
+    .legend-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1px 0;
+    }
+    .legend-item .del-btn {
+      cursor: pointer;
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 13px;
+      background: none;
+      border: none;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    .draw-area {
+      position: relative;
+      overflow: hidden;
+      background: #fff;
+      touch-action: none;
+    }
+    .draw-area.dragover { background: #f5f9ff; outline: 2px dashed var(--accent); outline-offset: -4px; }
+
+    .draw-item {
+      position: absolute;
+      border: 1.5px solid #26384b;
+      border-radius: 4px;
+      background: #f7f9fc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2px;
+      font-size: 9px;
+      font-weight: 700;
+      line-height: 1.1;
+      cursor: move;
+      user-select: none;
+      transform-origin: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,.06);
+      transition: box-shadow .1s;
+      font-family: Inter, system-ui, sans-serif;
+    }
+    .draw-item.selected {
+      outline: 2px solid rgba(26, 92, 255, .4);
+      border-color: var(--accent);
+      z-index: 4;
+    }
+    .draw-item.is-aircon { border-radius: 10px; background: #e3f0ff; }
+    .draw-item.is-door { border-style: dashed; background: #fff6e0; }
+    .draw-item.is-consult { background: #e5f9f0; }
+    .draw-item.is-special { background: #ffeae6; }
+    .draw-item.is-fridge { background: #e2f3ff; }
+
+    .bottom-text {
+      font-family: "Times New Roman", serif;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .signature {
+      width: 300px;
+      margin: 16px 0 0 auto;
+      text-align: center;
+      font-family: "Times New Roman", serif;
+    }
+    .signature .date {
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .date-input-group {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      border-bottom: 1px dotted #888;
+      padding: 0 4px 2px 4px;
+      font-family: "Times New Roman", serif;
+      font-size: 13px;
+    }
+    .date-input-group input {
+      border: 0;
+      background: transparent;
+      text-align: center;
+      font-family: "Times New Roman", serif;
+      font-size: 13px;
+      outline: none;
+      padding: 0;
+      margin: 0;
+      color: var(--ink);
+      width: auto;
+      min-width: 20px;
+    }
+    .date-input-group input::placeholder {
+      color: #666;
+      opacity: 0.7;
+    }
+    #placeLocation { width: 60px; }
+    #placeDay { width: 30px; }
+    #placeMonth { width: 30px; }
+    #placeYear { width: 30px; }
+
+    .signature .role {
+      font-weight: 700;
+      font-size: 13px;
+      line-height: 1.3;
+      margin-top: 4px;
+    }
+    .signature .note {
+      font-style: italic;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .signature .signer-name {
+      margin-top: 90px;
+    }
+    .signature .signer-name input {
+      width: 220px;
+      border: 0;
+      border-bottom: 1px dotted #888;
+      text-align: center;
+      font-family: "Times New Roman", serif;
+      font-size: 14px;
+      font-weight: 700;
+      background: transparent;
+      padding: 2px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      background: #1e293b;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: .2s;
+      z-index: 50;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: none; }
+
+    .mobile-note { display: none; }
+
+    @media (max-width: 1080px) {
+      .app { grid-template-columns: 190px 1fr 190px; }
+    }
+    @media (max-width: 820px) {
+      .app { display: block; height: auto; overflow: visible; }
+      .mobile-note { display: block; background: #fff4cf; margin: 8px; padding: 8px; border-radius: 6px; font-size: 11px; }
+      .topbar { position: relative; flex-wrap: wrap; }
+      .sidebar { border: 0; border-bottom: 1px solid var(--line); }
+      .workspace { padding: 8px; overflow: visible; }
+      .paper-wrap { min-width: 0; justify-content: flex-start; }
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 0; }
+      body { background: #fff; }
+      .topbar, .sidebar, .mobile-note, .toast { display: none !important; }
+      .app { display: block; height: auto; overflow: visible; }
+      .workspace { padding: 0; overflow: visible; }
+      .paper-wrap { min-width: 0; }
+      .paper { width: 210mm; min-height: 297mm; box-shadow: none; padding: 14mm 17mm 10mm; margin: 0; border-radius: 0; }
+      .layout-box { height: 120mm; }
+      .draw-item { box-shadow: none; }
+      .meta-row input { color: #000; }
+      .draw-area { overflow: hidden; }
+      .signature .signer-name { margin-top: 70px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">G</span>
+      <div>GPP Sơ đồ<small>Kéo thả · không cần kỹ thuật</small></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="undoBtn" title="Hoàn tác">↶</button>
+      <button class="btn" id="redoBtn" title="Làm lại">↷</button>
+      <button class="btn" id="saveBtn">💾 Lưu</button>
+      <button class="btn primary" id="printBtn">🖨 In</button>
+    </div>
+  </header>
+
+  <aside class="sidebar sidebar-left">
+    <section class="section">
+      <h3>Thư viện</h3>
+      <div class="library" id="library"></div>
+    </section>
+    <section class="section">
+      <button class="btn danger" id="clearBtn" style="width:100%;font-size:11px;">🗑 Xóa tất cả</button>
+    </section>
+  </aside>
+
+  <main class="workspace">
+    <div class="mobile-note">⚠️ Tối ưu cho máy tính. Trên điện thoại thao tác hạn chế.</div>
+    <div class="paper-wrap">
+      <section class="paper" id="paper">
+        <div class="doc-title">
+          <div class="country">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+          <div class="motto">Độc lập - Tự do - Hạnh Phúc</div>
+          <h1>BẢN VẼ BỐ TRÍ CÁC KHU VỰC CỦA CƠ SỞ BÁN LẺ THUỐC</h1>
+        </div>
+
+        <div class="meta">
+          <div class="meta-row"><label>Cơ sở kinh doanh:</label><input id="business" autocomplete="off" /></div>
+          <div class="meta-row"><label>Địa điểm:</label><input id="address" autocomplete="off" /></div>
+          <div class="meta-row"><label>Người phụ trách :</label><input id="manager" autocomplete="off" /></div>
+          <div class="meta-row">
+            <label>Diện tích:</label>
+            <div class="meta-area">
+              <input id="area" type="text" autocomplete="off" placeholder="0" />
+              <span>m² .</span>
+            </div>
+          </div>
+          <div class="meta-note"><b>Cơ sở riêng biệt và cách xa nguồn ô nhiễm</b> (Nhà vệ sinh không bố trí trong khu vực bảo quản thuốc): <span>Riêng biệt</span></div>
+        </div>
+
+        <div class="part-title">1/ Bản vẽ bố trí các khu vực của cơ sở bán lẻ thuốc:</div>
+        <div class="layout-box">
+          <div class="legend" id="legend"></div>
+          <div class="draw-area" id="drawArea"></div>
+        </div>
+
+        <div class="bottom-text"><b>2/ Sơ đồ địa điểm kinh doanh</b>(Vẽ ở mặt sau: Vẽ rõ vị trí, số nhà, tên phố, phường, ngõ, xóm, các gần nhất và các đặc điểm dễ nhận biết khác…)</div>
+
+        <div class="signature">
+          <div class="date">
+            <div class="date-input-group">
+              <input id="placeLocation" type="text" placeholder="………" />
+              <span>, ngày</span>
+              <input id="placeDay" type="text" placeholder="......" />
+              <span> tháng </span>
+              <input id="placeMonth" type="text" placeholder="......." />
+              <span> năm 20</span>
+              <input id="placeYear" type="text" placeholder="...." />
+            </div>
+          </div>
+          <div class="role">NGƯỜI ĐẠI DIỆN THEO PHÁP LUẬT/<br/>NGƯỜI ĐƯỢC ỦY QUYỀN</div>
+          <div class="note">(Ký, ghi rõ họ tên, chức danh, đóng dấu (nếu có)</div>
+          <div class="signer-name"><input id="signerName" placeholder="Họ và tên" /></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <aside class="sidebar sidebar-right">
+    <section class="section">
+      <h3>Chỉnh sửa</h3>
+      <div class="inspector empty" id="inspector">Chọn vật thể để chỉnh</div>
+    </section>
+    <section class="section">
+      <h3>Nội dung chính</h3>
+      <div class="statusbox">
+        <div class="status-head" id="statusHead">0/7</div>
+        <div class="status-list" id="statusList"></div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // === DANH SÁCH LOẠI ===
+  const TYPES = [
+    { type: 'special', label: 'Thuốc kiểm soát đặc biệt', icon: '🔒', main: true },
+    { type: 'otc', label: 'Thuốc không kê đơn', icon: 'OTC', main: true },
+    { type: 'rx', label: 'Thuốc kê đơn', icon: 'Rx', main: true },
+    { type: 'supplement', label: 'Thực phẩm chức năng', icon: '▤', main: true },
+    { type: 'cosmetic', label: 'Mỹ phẩm', icon: '✦', main: true },
+    { type: 'device', label: 'Trang thiết bị y tế', icon: '✚', main: true },
+    { type: 'aircon', label: 'Máy lạnh', icon: '❄', main: true },
+    { type: 'counter', label: 'Quầy bán thuốc', icon: '▰' },
+    { type: 'consult', label: 'Bàn tư vấn', icon: '☷' },
+    { type: 'fridge', label: 'Tủ bảo quản lạnh', icon: '▣' },
+    { type: 'thermo', label: 'Nhiệt ẩm kế', icon: '🌡' },
+    { type: 'computer', label: 'Máy tính', icon: '▤' },
+    { type: 'records', label: 'Tủ hồ sơ', icon: '▥' },
+    { type: 'door', label: 'Cửa ra vào', icon: '↥' },
+    { type: 'shelf', label: 'Tủ / kệ thuốc', icon: '▦' },
+    { type: 'pickup', label: 'Khu ra lẻ', icon: '🏷️' },
+    { type: 'printer', label: 'Máy in', icon: '🖨️' },
+    { type: 'custom', label: 'Tự điền', icon: '📝' }
+  ];
+
+  const drawArea = document.getElementById('drawArea');
+  const library = document.getElementById('library');
+  const inspector = document.getElementById('inspector');
+  const statusHead = document.getElementById('statusHead');
+  const statusList = document.getElementById('statusList');
+  const toast = document.getElementById('toast');
+  const legendEl = document.getElementById('legend');
+
+  let state = {
+    items: [],
+    selected: null,
+    meta: {},
+    dynamicLegend: []
+  };
+
+  let undoStack = [], redoStack = [];
+  let dragging = null;
+
+  function uid() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function clamp(v,a,b) { return Math.max(a, Math.min(b, v)); }
+
+  function titleCaseLabel(text) {
+    return text.split(' ').map(word => {
+      if (word.length === 0) return word;
+      if (word === word.toUpperCase() && word.length > 1) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+  }
+
+  function getType(type) { return TYPES.find(t => t.type === type); }
+  function defaultSize(type) {
+    if (type === 'aircon') return [18,7];
+    if (type === 'door') return [14,7];
+    if (type === 'thermo' || type === 'computer') return [10,8];
+    if (type === 'consult') return [22,12];
+    if (type === 'counter') return [26,10];
+    if (type === 'fridge' || type === 'records') return [14,16];
+    if (type === 'pickup') return [22,10];
+    if (type === 'printer') return [12,9];
+    return [22,10];
+  }
+  function clampItemToArea(item, rect = drawArea.getBoundingClientRect()) {
+    const wPx = item.w/100*rect.width, hPx = item.h/100*rect.height;
+    const rad = (item.r||0)*Math.PI/180, c=Math.abs(Math.cos(rad)), sn=Math.abs(Math.sin(rad));
+    const boxW = wPx*c + hPx*sn, boxH = wPx*sn + hPx*c;
+    let cx = (item.x/100*rect.width) + wPx/2, cy = (item.y/100*rect.height) + hPx/2;
+    cx = clamp(cx, boxW/2, rect.width - boxW/2);
+    cy = clamp(cy, boxH/2, rect.height - boxH/2);
+    item.x = (cx - wPx/2)/rect.width*100;
+    item.y = (cy - hPx/2)/rect.height*100;
+    return item;
+  }
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1400);
+  }
+  function snapshot() {
+    return JSON.stringify({
+      items: state.items,
+      meta: state.meta,
+      dynamicLegend: state.dynamicLegend
+    });
+  }
+  function pushHistory() {
+    undoStack.push(snapshot());
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack = [];
+    updateHistoryBtns();
+  }
+  function restore(raw) {
+    const s = JSON.parse(raw);
+    state.items = s.items || [];
+    state.meta = s.meta || {};
+    state.dynamicLegend = s.dynamicLegend || [];
+    state.selected = null;
+    setMeta(state.meta);
+    render();
+  }
+  function updateHistoryBtns() {
+    document.getElementById('undoBtn').disabled = !undoStack.length;
+    document.getElementById('redoBtn').disabled = !redoStack.length;
+  }
+
+  // === THƯ VIỆN ===
+  function makeLibrary() {
+    TYPES.forEach(t => {
+      const el = document.createElement('div');
+      el.className = 'lib-item';
+      el.draggable = true;
+      el.dataset.type = t.type;
+      el.innerHTML = `<span class="lib-icon">${t.icon}</span><span>${t.label}</span>`;
+      el.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', t.type);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      el.addEventListener('dblclick', () => {
+        let displayName = null;
+        if (t.type === 'custom') {
+          const name = prompt('Tên chức năng:', 'Chức năng của tôi');
+          if (name === null) return;
+          displayName = name.trim() || 'Chức năng';
+        }
+        pushHistory();
+        addItem(t.type, 50, 50, displayName);
+        showToast('Đã thêm ' + (displayName || t.label));
+      });
+      library.appendChild(el);
+    });
+  }
+
+  function addItem(type, x, y, displayName) {
+    const [w,h] = defaultSize(type);
+    const item = { id: uid(), type, x: x-w/2, y: y-h/2, w, h, r: 0 };
+    if (displayName) item.displayName = displayName;
+    clampItemToArea(item);
+    state.items.push(item);
+
+    const t = getType(type);
+    if (t && !t.main) {
+      const label = displayName || t.label;
+      state.dynamicLegend.push({ id: item.id, label });
+    }
+    state.selected = item.id;
+    render();
+    return item;
+  }
+
+  function deleteItemById(id) {
+    const item = state.items.find(i => i.id === id);
+    if (!item) return;
+    const idx = state.items.indexOf(item);
+    if (idx > -1) {
+      state.items.splice(idx, 1);
+      const t = getType(item.type);
+      if (t && !t.main) {
+        const legIdx = state.dynamicLegend.findIndex(d => d.id === id);
+        if (legIdx > -1) state.dynamicLegend.splice(legIdx, 1);
+      }
+      state.selected = null;
+      render();
+    }
+  }
+
+  function removeFromLegend(id) {
+    const legIdx = state.dynamicLegend.findIndex(d => d.id === id);
+    if (legIdx > -1) {
+      pushHistory();
+      state.dynamicLegend.splice(legIdx, 1);
+      const item = state.items.find(i => i.id === id);
+      if (item) delete item.displayName;
+      render();
+      showToast('Đã xoá khỏi chú thích, giữ vật thể');
+    }
+  }
+
+  function renderLegend() {
+    if (!legendEl) return;
+    let html = '';
+    const mains = TYPES.filter(t => t.main);
+    mains.forEach((t, idx) => {
+      html += `<div class="legend-item"><span>${idx+1}. ${t.label}</span></div>`;
+    });
+    state.dynamicLegend.forEach((item, idx) => {
+      const num = 8 + idx;
+      html += `<div class="legend-item">
+                <span>${num}. ${item.label}</span>
+                <button class="del-btn" data-id="${item.id}" title="Xoá khỏi chú thích">×</button>
+              </div>`;
+    });
+    legendEl.innerHTML = html;
+    legendEl.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFromLegend(btn.dataset.id);
+      });
+    });
+  }
+
+  // === RENDER CHÍNH ===
+  function render() {
+    drawArea.innerHTML = '';
+    state.items.forEach(item => {
+      const t = getType(item.type);
+      let label = item.displayName;
+      if (!label) {
+        const leg = state.dynamicLegend.find(d => d.id === item.id);
+        if (leg) label = leg.label;
+        else label = t ? t.label : '?';
+      }
+      const el = document.createElement('div');
+      el.className = 'draw-item';
+      if (item.id === state.selected) el.classList.add('selected');
+      if (['aircon','door','consult','special','fridge'].includes(item.type))
+        el.classList.add('is-'+item.type);
+      el.dataset.id = item.id;
+      el.style.left = item.x + '%';
+      el.style.top = item.y + '%';
+      el.style.width = item.w + '%';
+      el.style.height = item.h + '%';
+      el.style.transform = `rotate(${item.r}deg)`;
+      el.textContent = titleCaseLabel(label);
+
+      el.addEventListener('pointerdown', onItemPointerDown);
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        state.selected = item.id;
+        renderInspector();
+        selectOnly();
+      });
+      el.addEventListener('wheel', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (state.selected !== item.id) state.selected = item.id;
+        pushHistory();
+        let step = e.deltaY > 0 ? 5 : -5;
+        item.r = (item.r + step + 360) % 360;
+        const snaps = [0,90,180,270];
+        for (const s of snaps) {
+          let d = Math.abs(item.r - s);
+          if (d > 180) d = 360 - d;
+          if (d <= 3) { item.r = s; break; }
+        }
+        clampItemToArea(item);
+        render();
+      }, { passive: false });
+
+      drawArea.appendChild(el);
+    });
+    renderLegend();
+    renderInspector();
+    renderStatus();
+    updateHistoryBtns();
+  }
+
+  function selectOnly() {
+    [...drawArea.children].forEach(el =>
+      el.classList.toggle('selected', el.dataset.id === state.selected)
+    );
+  }
+
+  // === KÉO THẢ ===
+  function onItemPointerDown(e) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    const id = e.currentTarget.dataset.id;
+    const item = state.items.find(i => i.id === id);
+    state.selected = id;
+    selectOnly();
+    renderInspector();
+
+    const rect = drawArea.getBoundingClientRect();
+    dragging = {
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: item.x,
+      origY: item.y,
+      moved: false,
+      rect,
+      saved: false
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.addEventListener('pointermove', onMove);
+    e.currentTarget.addEventListener('pointerup', onUp, { once: true });
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const item = state.items.find(i => i.id === dragging.id);
+    if (!item) return;
+    let dx = (e.clientX - dragging.startX) / dragging.rect.width * 100;
+    let dy = (e.clientY - dragging.startY) / dragging.rect.height * 100;
+    if (Math.abs(dx) + Math.abs(dy) > .1) dragging.moved = true;
+    if (dragging.moved && !dragging.saved) {
+      pushHistory();
+      dragging.saved = true;
+    }
+    item.x = dragging.origX + dx;
+    item.y = dragging.origY + dy;
+    clampItemToArea(item, dragging.rect);
+    const el = drawArea.querySelector(`[data-id="${item.id}"]`);
+    if (el) {
+      el.style.left = item.x + '%';
+      el.style.top = item.y + '%';
+    }
+  }
+
+  function onUp(e) {
+    e.currentTarget.removeEventListener('pointermove', onMove);
+    dragging = null;
+  }
+
+  // === DROP ===
+  drawArea.addEventListener('dragover', e => {
+    e.preventDefault();
+    drawArea.classList.add('dragover');
+  });
+  drawArea.addEventListener('dragleave', () => drawArea.classList.remove('dragover'));
+  drawArea.addEventListener('drop', e => {
+    e.preventDefault();
+    drawArea.classList.remove('dragover');
+    const type = e.dataTransfer.getData('text/plain');
+    if (!getType(type)) return;
+    const rect = drawArea.getBoundingClientRect();
+    let displayName = null;
+    if (type === 'custom') {
+      const name = prompt('Tên chức năng:', 'Chức năng của tôi');
+      if (name === null) return;
+      displayName = name.trim() || 'Chức năng';
+    }
+    pushHistory();
+    addItem(type,
+      (e.clientX - rect.left) / rect.width * 100,
+      (e.clientY - rect.top) / rect.height * 100,
+      displayName
+    );
+  });
+  drawArea.addEventListener('click', () => {
+    state.selected = null;
+    selectOnly();
+    renderInspector();
+  });
+
+  // === INSPECTOR ===
+  function renderInspector() {
+    const item = state.items.find(i => i.id === state.selected);
+    if (!item) {
+      inspector.className = 'inspector empty';
+      inspector.innerHTML = 'Chọn vật thể để chỉnh';
+      return;
+    }
+    const t = getType(item.type);
+    const isDynamic = t && !t.main;
+    const legIndex = isDynamic ? state.dynamicLegend.findIndex(d => d.id === item.id) : -1;
+
+    let html = `<div style="font-weight:700;margin-bottom:4px;">${t ? t.label : '?'}</div>`;
+
+    if (isDynamic) {
+      html += `<div class="field"><label>Tên hiển thị</label>
+                <input id="displayNameInput" type="text" value="${item.displayName || (legIndex>-1 ? state.dynamicLegend[legIndex].label : '')}" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font-size:12px;"></div>`;
+    }
+
+    html += `
+      <div class="field"><label><span>Ngang</span><span>Ngắn ↔ Dài</span></label><input id="wRange" type="range" min="6" max="40" step="1" value="${item.w}"></div>
+      <div class="field"><label><span>Dọc</span><span>Thấp ↔ Cao</span></label><input id="hRange" type="range" min="5" max="32" step="1" value="${item.h}"></div>
+      <div class="mini-actions">
+        <button class="btn" id="copyItem">⧉ Copy</button>
+        <button class="btn danger" id="deleteItem">🗑 Xóa</button>
+      </div>
+      <button class="btn" id="rotate90" style="width:100%;margin-top:6px;">↻ Xoay 90°</button>
+    `;
+
+    if (isDynamic && legIndex > -1) {
+      html += `
+        <div style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px;display:flex;gap:4px;align-items:center;justify-content:space-between;font-size:11px;">
+          <span>Thứ tự: ${8+legIndex}</span>
+          <div>
+            <button class="btn" id="moveUpBtn" ${legIndex===0?'disabled':''} style="padding:2px 8px;">▲</button>
+            <button class="btn" id="moveDownBtn" ${legIndex===state.dynamicLegend.length-1?'disabled':''} style="padding:2px 8px;">▼</button>
+          </div>
+          <button class="btn" id="removeFromLegendBtn" style="color:var(--danger);border-color:var(--danger);padding:2px 8px;">× chú thích</button>
+        </div>
+      `;
+    }
+
+    inspector.className = 'inspector';
+    inspector.innerHTML = html;
+
+    const wr = document.getElementById('wRange'), hr = document.getElementById('hRange');
+    let hist = false;
+    const start = () => { if (!hist) { pushHistory(); hist = true; } };
+    wr.addEventListener('pointerdown', start);
+    hr.addEventListener('pointerdown', start);
+    wr.addEventListener('input', () => {
+      item.w = +wr.value;
+      clampItemToArea(item);
+      renderItemOnly(item);
+    });
+    hr.addEventListener('input', () => {
+      item.h = +hr.value;
+      clampItemToArea(item);
+      renderItemOnly(item);
+    });
+    wr.addEventListener('change', () => { hist = false; });
+    hr.addEventListener('change', () => { hist = false; });
+
+    document.getElementById('copyItem').onclick = () => {
+      pushHistory();
+      const c = { ...item, id: uid(), x: item.x + 3, y: item.y + 3 };
+      const tc = getType(c.type);
+      if (tc && !tc.main) {
+        const label = item.displayName || (state.dynamicLegend.find(d => d.id === item.id)?.label || tc.label);
+        c.displayName = label;
+        clampItemToArea(c);
+        state.items.push(c);
+        state.dynamicLegend.push({ id: c.id, label });
+      } else {
+        clampItemToArea(c);
+        state.items.push(c);
+      }
+      state.selected = c.id;
+      render();
+      showToast('Đã copy');
+    };
+
+    document.getElementById('deleteItem').onclick = () => {
+      pushHistory();
+      deleteItemById(item.id);
+    };
+
+    document.getElementById('rotate90').onclick = () => {
+      pushHistory();
+      item.r = (item.r + 90) % 360;
+      clampItemToArea(item);
+      render();
+    };
+
+    if (isDynamic) {
+      const nameInput = document.getElementById('displayNameInput');
+      if (nameInput) {
+        nameInput.addEventListener('input', () => {
+          const newName = nameInput.value.trim() || 'Chức năng';
+          const leg = state.dynamicLegend.find(d => d.id === item.id);
+          if (leg) {
+            leg.label = newName;
+            item.displayName = newName;
+            pushHistory();
+            render();
+          }
+        });
+      }
+
+      const upBtn = document.getElementById('moveUpBtn');
+      const downBtn = document.getElementById('moveDownBtn');
+      if (upBtn) {
+        upBtn.addEventListener('click', () => {
+          const idx = state.dynamicLegend.findIndex(d => d.id === item.id);
+          if (idx > 0) {
+            pushHistory();
+            [state.dynamicLegend[idx-1], state.dynamicLegend[idx]] = [state.dynamicLegend[idx], state.dynamicLegend[idx-1]];
+            render();
+          }
+        });
+      }
+      if (downBtn) {
+        downBtn.addEventListener('click', () => {
+          const idx = state.dynamicLegend.findIndex(d => d.id === item.id);
+          if (idx < state.dynamicLegend.length - 1) {
+            pushHistory();
+            [state.dynamicLegend[idx+1], state.dynamicLegend[idx]] = [state.dynamicLegend[idx], state.dynamicLegend[idx+1]];
+            render();
+          }
+        });
+      }
+
+      const removeBtn = document.getElementById('removeFromLegendBtn');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          removeFromLegend(item.id);
+        });
+      }
+    }
+  }
+
+  function renderItemOnly(item) {
+    const el = drawArea.querySelector(`[data-id="${item.id}"]`);
+    if (el) {
+      el.style.left = item.x + '%';
+      el.style.top = item.y + '%';
+      el.style.width = item.w + '%';
+      el.style.height = item.h + '%';
+      el.style.transform = `rotate(${item.r}deg)`;
+    }
+  }
+
+  // === TRẠNG THÁI ===
+  function renderStatus() {
+    const mains = TYPES.filter(t => t.main);
+    let count = 0;
+    statusList.innerHTML = '';
+    mains.forEach(t => {
+      const ok = state.items.some(i => i.type === t.type);
+      if (ok) count++;
+      const row = document.createElement('div');
+      row.className = 'status-row' + (ok ? ' ok' : '');
+      row.innerHTML = `<span>${ok ? '✓' : '○'}</span><span>${t.label}</span>`;
+      statusList.appendChild(row);
+    });
+    statusHead.textContent = `${count}/7`;
+  }
+
+  // === META ===
+  function getMeta() {
+    const ids = ['business','address','manager','area','placeLocation','placeDay','placeMonth','placeYear','signerName'];
+    const m = {};
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) m[id] = el.value;
+    });
+    return m;
+  }
+  function setMeta(m) {
+    Object.keys(m||{}).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = m[id] || '';
+    });
+  }
+
+  // === Xóa tất cả meta (reset) ===
+  function resetMeta() {
+    const ids = ['business','address','manager','area','placeLocation','placeDay','placeMonth','placeYear','signerName'];
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    state.meta = {};
+  }
+
+  // === Lưu / tải ===
+  function saveLocal(show = true) {
+    state.meta = getMeta();
+    localStorage.setItem('gpp-drawing-v1', JSON.stringify(state));
+    if (show) showToast('Đã lưu');
+  }
+
+  // === KHÔNG TỰ ĐỘNG PHỤC HỒI ===
+  // Chúng ta không gọi loadLocal() khi khởi động để đảm bảo trang trống.
+
+  // === SỰ KIỆN ===
+  ['business','address','manager','area','placeLocation','placeDay','placeMonth','placeYear','signerName'].forEach(id =>
+    document.getElementById(id).addEventListener('input', () => {
+      // không tự động lưu, chỉ lưu khi nhấn nút Lưu
+    })
+  );
+
+  document.getElementById('saveBtn').onclick = () => saveLocal(true);
+
+  document.getElementById('printBtn').onclick = () => {
+    state.selected = null;
+    selectOnly();
+    renderInspector();
+    saveLocal(false);
+    setTimeout(() => window.print(), 60);
+  };
+
+  document.getElementById('clearBtn').onclick = () => {
+    if (!state.items.length && !Object.values(getMeta()).some(v => v !== '')) {
+      showToast('Đã sạch sẽ');
+      return;
+    }
+    if (confirm('Xóa toàn bộ sơ đồ và dữ liệu đã nhập?')) {
+      pushHistory();
+      state.items = [];
+      state.dynamicLegend = [];
+      state.selected = null;
+      resetMeta();      // xóa hết nội dung nhập
+      render();
+      showToast('Đã xóa tất cả');
+    }
+  };
+
+  document.getElementById('undoBtn').onclick = () => {
+    if (!undoStack.length) return;
+    redoStack.push(snapshot());
+    restore(undoStack.pop());
+  };
+  document.getElementById('redoBtn').onclick = () => {
+    if (!redoStack.length) return;
+    undoStack.push(snapshot());
+    restore(redoStack.pop());
+  };
+
+  document.addEventListener('keydown', e => {
+    const active = document.activeElement;
+    if (active && ['INPUT','TEXTAREA'].includes(active.tagName)) return;
+    if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); document.getElementById('undoBtn').click(); }
+    if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); document.getElementById('redoBtn').click(); }
+    if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase() === 'c' && state.selected) { e.preventDefault(); document.getElementById('copyItem')?.click(); }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selected) { e.preventDefault(); document.getElementById('deleteItem')?.click(); }
+  });
+
+  // === KHỞI TẠO (trang trống) ===
+  makeLibrary();
+  // KHÔNG loadLocal() -> trang trống
+  state.items = [];
+  state.dynamicLegend = [];
+  resetMeta();
+  render();
+  updateHistoryBtns();
+})();
+</script>
+</body>
+</html>
