@@ -113,12 +113,41 @@
       border-right: 1px solid var(--line);
       grid-column: 1;
       grid-row: 2;
+      overflow: hidden;
+      gap: 8px;
+      padding: 10px;
     }
+    .sidebar-left .section:first-child {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-left .section:first-child h3 { margin-bottom: 5px; flex: 0 0 auto; }
+    .sidebar-left .section:last-child { flex: 0 0 auto; }
     .sidebar-right {
       border-left: 1px solid var(--line);
       grid-column: 3;
       grid-row: 2;
+      overflow: hidden;
+      gap: 8px;
+      padding: 10px;
     }
+    .sidebar-right .section { min-height: 0; }
+    .sidebar-right .section h3 { margin-bottom: 5px; }
+    .sidebar-right .inspector { padding: 8px; font-size: 11px; }
+    .sidebar-right .field { margin: 5px 0; }
+    .sidebar-right .mini-actions { margin-top: 4px; gap: 4px; }
+    .sidebar-right .mini-actions .btn { padding: 5px 4px; font-size: 10px; }
+    .sidebar-right #rotate90 { margin-top: 4px !important; padding: 5px 6px; font-size: 10px; }
+    .sidebar-right .status-head { padding: 5px 8px; }
+    .sidebar-right .status-list {
+      padding: 3px 7px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 7px;
+    }
+    .sidebar-right .status-row { font-size: 9px; padding: 2px 0; gap: 4px; }
 
     .section h3 {
       font-size: 11px;
@@ -131,29 +160,89 @@
 
     .library {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
+      grid-template-columns: repeat(var(--library-cols, 2), minmax(0, 1fr));
+      grid-template-rows: repeat(var(--library-rows, 1), minmax(0, 1fr));
+      gap: var(--library-gap, 3px);
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
     }
     .lib-item {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 6px 4px;
-      min-height: 50px;
+      border-radius: 5px;
+      padding: 1px 3px;
+      min-height: 0;
+      height: 100%;
       cursor: grab;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 9px;
+      justify-content: flex-start;
+      gap: var(--library-icon-gap, 3px);
+      text-align: left;
+      font-size: var(--library-font, 8.5px);
       font-weight: 700;
-      line-height: 1.2;
+      line-height: 1.05;
       background: #fafcff;
       transition: .1s;
       user-select: none;
+      overflow: hidden;
+    }
+    .lib-icon {
+      width: var(--library-icon, 12px);
+      height: var(--library-icon, 12px);
+      flex: 0 0 var(--library-icon, 12px);
+      display: grid;
+      place-items: center;
+      color: #526477;
+    }
+    .lib-icon svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+    }
+    .lib-label {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      word-break: break-word;
+      max-width: 100%;
+      min-width: 0;
     }
     .lib-item:hover { border-color: var(--accent); background: #f2f7ff; }
-    .lib-icon { font-size: 16px; margin-bottom: 2px; }
+    .lib-item.user-library { border-color: #b8caff; background: #f7f9ff; }
+    .library.delete-mode .lib-item {
+      cursor: pointer;
+      border-color: var(--danger);
+      background: #fff1f1;
+      box-shadow: 0 0 0 1px rgba(209,69,69,.08);
+    }
+
+    .library-manage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+    .library-manage .btn { padding: 5px 2px; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .library-manage .btn.active { background: #fff1f1; border-color: var(--danger); color: var(--danger); }
+
+    .left-tools { display: grid; gap: 6px; }
+    .left-tools .btn { width: 100%; font-size: 11px; padding: 7px 8px; }
+    .saved-plans { display: grid; gap: 6px; }
+    .saved-plans select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: 6px 7px;
+      font-size: 11px;
+      outline: none;
+    }
+    .saved-plan-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .saved-plan-actions .btn { font-size: 10px; padding: 6px 4px; }
+    .sidebar-right .saved-plans { gap: 4px; }
+    .sidebar-right .saved-plans select { padding: 5px 6px; font-size: 10px; }
+    .sidebar-right .saved-plans > .btn { padding: 6px 5px; font-size: 10px; }
+    .sidebar-right .saved-plan-actions { gap: 4px; }
+    .sidebar-right .saved-plan-actions .btn { padding: 5px 3px; font-size: 9px; }
 
     .inspector {
       border: 1px solid var(--line);
@@ -548,6 +637,8 @@
       .mobile-note { display: block; background: #fff4cf; margin: 8px; padding: 8px; border-radius: 6px; font-size: 11px; }
       .topbar { position: relative; flex-wrap: wrap; }
       .sidebar { border: 0; border-bottom: 1px solid var(--line); }
+      .sidebar-right { overflow: visible; padding: 12px; gap: 12px; }
+      .sidebar-right .status-list { display: block; }
       .workspace { padding: 8px; overflow: visible; }
       .paper-wrap { min-width: 0; justify-content: flex-start; }
     }
@@ -653,6 +744,27 @@
       <div class="inspector empty" id="inspector">Chọn vật thể để chỉnh</div>
     </section>
     <section class="section">
+      <h3>Quản lý thư viện</h3>
+      <div class="library-manage">
+        <button class="btn" id="addLibraryBtn" type="button" title="Tạo nút thư viện mới">＋ Tạo</button>
+        <button class="btn danger" id="deleteLibraryBtn" type="button" title="Chọn rồi bấm trực tiếp nút cần xóa">− Xóa</button>
+        <button class="btn" id="restoreLibraryBtn" type="button" title="Khôi phục toàn bộ nút mặc định đã xóa">↺ Mặc định</button>
+      </div>
+    </section>
+    <section class="section">
+      <h3>Sơ đồ đã lưu</h3>
+      <div class="saved-plans">
+        <select id="savedPlanSelect" aria-label="Danh sách sơ đồ đã lưu">
+          <option value="">— Chưa có sơ đồ —</option>
+        </select>
+        <button class="btn primary" id="savePlanBtn" type="button">💾 Lưu sơ đồ hiện tại</button>
+        <div class="saved-plan-actions">
+          <button class="btn" id="loadPlanBtn" type="button">📂 Mở</button>
+          <button class="btn danger" id="deletePlanBtn" type="button">🗑 Xóa bản lưu</button>
+        </div>
+      </div>
+    </section>
+    <section class="section">
       <h3>Nội dung chính</h3>
       <div class="statusbox">
         <div class="status-head" id="statusHead">0/7</div>
@@ -695,6 +807,7 @@
     { type: 'shelf', label: 'Tủ / kệ thuốc', icon: '▦' },
     { type: 'pickup', label: 'Khu ra lẻ', icon: '🏷️' },
     { type: 'printer', label: 'Máy in', icon: '🖨️' },
+    { type: 'info', label: 'Thông tin', icon: 'ℹ️' },
     { type: 'custom', label: 'Tự điền', icon: '📝' }
   ];
 
@@ -715,6 +828,12 @@
 
   let undoStack = [], redoStack = [];
   let dragging = null;
+
+  const CUSTOM_LIBRARY_KEY = 'gpp-custom-library-v1';
+  const HIDDEN_LIBRARY_KEY = 'gpp-hidden-library-v1';
+  let customLibrary = [];
+  let hiddenLibraryTypes = [];
+  let libraryDeleteMode = false;
 
   function uid() { return 'i' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
   function clamp(v,a,b) { return Math.max(a, Math.min(b, v)); }
@@ -737,6 +856,7 @@
     if (type === 'fridge' || type === 'records') return [14,16];
     if (type === 'pickup') return [22,10];
     if (type === 'printer') return [12,9];
+    if (type === 'info') return [24,9];
     return [22,10];
   }
   function clampItemToArea(item, rect = drawArea.getBoundingClientRect()) {
@@ -783,31 +903,157 @@
   }
 
   // === THƯ VIỆN ===
-  function makeLibrary() {
-    TYPES.forEach(t => {
-      const el = document.createElement('div');
-      el.className = 'lib-item';
-      el.draggable = true;
-      el.dataset.type = t.type;
-      el.innerHTML = `<span class="lib-icon">${t.icon}</span><span>${t.label}</span>`;
-      el.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', t.type);
-        e.dataTransfer.effectAllowed = 'copy';
-      });
-      el.addEventListener('dblclick', () => {
-        let displayName = null;
-        if (t.type === 'custom') {
-          const name = prompt('Tên chức năng:', 'Chức năng của tôi');
-          if (name === null) return;
-          displayName = name.trim() || 'Chức năng';
-        }
-        pushHistory();
-        addItem(t.type, 50, 50, displayName);
-        showToast('Đã thêm ' + (displayName || t.label));
-      });
-      library.appendChild(el);
-    });
+  function loadCustomLibrary() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(CUSTOM_LIBRARY_KEY) || '[]');
+      customLibrary = Array.isArray(raw) ? raw.filter(x => x && x.id && x.label) : [];
+    } catch (_) {
+      customLibrary = [];
+    }
+    try {
+      const hidden = JSON.parse(localStorage.getItem(HIDDEN_LIBRARY_KEY) || '[]');
+      const validTypes = new Set(TYPES.map(t => t.type));
+      hiddenLibraryTypes = Array.isArray(hidden) ? hidden.filter(type => validTypes.has(type)) : [];
+    } catch (_) {
+      hiddenLibraryTypes = [];
+    }
   }
+
+  function saveCustomLibrary() {
+    localStorage.setItem(CUSTOM_LIBRARY_KEY, JSON.stringify(customLibrary));
+  }
+
+  function saveHiddenLibrary() {
+    localStorage.setItem(HIDDEN_LIBRARY_KEY, JSON.stringify(hiddenLibraryTypes));
+  }
+
+  function setLibraryDeleteMode(on) {
+    libraryDeleteMode = !!on;
+    library.classList.toggle('delete-mode', libraryDeleteMode);
+    const btn = document.getElementById('deleteLibraryBtn');
+    if (btn) {
+      btn.classList.toggle('active', libraryDeleteMode);
+      btn.textContent = libraryDeleteMode ? '− Đang xóa' : '− Xóa';
+    }
+  }
+
+  function libraryIconSvg(type, customId = '') {
+    const common = 'viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+    const icons = {
+      special: `<svg ${common}><rect x="6" y="10" width="12" height="10" rx="2"/><path d="M8.5 10V7.5a3.5 3.5 0 0 1 7 0V10"/></svg>`,
+      otc: `<svg ${common}><path d="M7.2 16.8a4 4 0 0 1 0-5.6l4-4a4 4 0 0 1 5.6 5.6l-4 4a4 4 0 0 1-5.6 0Z"/><path d="m9.2 9.2 5.6 5.6"/></svg>`,
+      rx: `<svg ${common}><path d="M6 5v14M6 5h5a4 4 0 0 1 0 8H6m5 0 6 6m0-6-6 6"/></svg>`,
+      supplement: `<svg ${common}><rect x="7" y="5" width="10" height="15" rx="2"/><path d="M9 5V3h6v2M9 10h6M9 14h6"/></svg>`,
+      cosmetic: `<svg ${common}><path d="m12 3 1.3 4.2L17.5 8.5l-4.2 1.3L12 14l-1.3-4.2-4.2-1.3 4.2-1.3L12 3Z"/><path d="m18 14 .7 2.3L21 17l-2.3.7L18 20l-.7-2.3L15 17l2.3-.7L18 14Z"/></svg>`,
+      device: `<svg ${common}><path d="M9 4h6v5h5v6h-5v5H9v-5H4V9h5V4Z"/></svg>`,
+      aircon: `<svg ${common}><rect x="3" y="5" width="18" height="8" rx="2"/><path d="M6 9h12M8 17c1-2 2-2 3-4m5 4c-1-2-2-2-3-4"/></svg>`,
+      counter: `<svg ${common}><path d="M4 8h16v11H4zM4 12h16M8 19v2m8-2v2"/></svg>`,
+      consult: `<svg ${common}><path d="M4 10h16M6 10v8m12-8v8M8 6h8v4"/></svg>`,
+      fridge: `<svg ${common}><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 10h12M9 6v2m0 5v3"/></svg>`,
+      thermo: `<svg ${common}><path d="M10 5a2 2 0 0 1 4 0v9.2a4 4 0 1 1-4 0V5Z"/><path d="M12 8v8"/></svg>`,
+      computer: `<svg ${common}><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8m-4-4v4"/></svg>`,
+      records: `<svg ${common}><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M5 10h14M9 7h6m-6 7h6"/></svg>`,
+      door: `<svg ${common}><path d="M6 21V4h11v17M6 21h13"/><circle cx="14" cy="13" r=".7" fill="currentColor" stroke="none"/></svg>`,
+      shelf: `<svg ${common}><rect x="4" y="3" width="16" height="18"/><path d="M4 9h16M4 15h16M9 3v18"/></svg>`,
+      pickup: `<svg ${common}><path d="M4 7h12l4 5-8 8-8-8V7Z"/><circle cx="8" cy="11" r="1"/></svg>`,
+      printer: `<svg ${common}><path d="M7 8V3h10v5M6 17H4V9h16v8h-2M7 14h10v7H7z"/><path d="M17 11h.01"/></svg>`,
+      info: `<svg ${common}><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg>`,
+      custom: `<svg ${common}><path d="M4 20h4l10-10-4-4L4 16v4Z"/><path d="m12.5 7.5 4 4"/></svg>`
+    };
+    if (customId) return `<svg ${common}><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
+    return icons[type] || icons.custom;
+  }
+
+  function addLibraryElement({ type, label, customId = '' }) {
+    const el = document.createElement('div');
+    el.className = 'lib-item' + (customId ? ' user-library' : '');
+    el.draggable = !libraryDeleteMode;
+    el.dataset.type = type;
+    if (customId) el.dataset.customId = customId;
+    const icon = document.createElement('span');
+    icon.className = 'lib-icon';
+    icon.innerHTML = libraryIconSvg(type, customId);
+    const text = document.createElement('span');
+    text.className = 'lib-label';
+    text.textContent = label;
+    el.append(icon, text);
+
+    el.addEventListener('dragstart', e => {
+      if (libraryDeleteMode) { e.preventDefault(); return; }
+      const payload = customId ? `customlib:${customId}` : type;
+      e.dataTransfer.setData('text/plain', payload);
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+
+    el.addEventListener('click', e => {
+      if (!libraryDeleteMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (customId) {
+        const entry = customLibrary.find(x => x.id === customId);
+        if (!entry) return;
+        customLibrary = customLibrary.filter(x => x.id !== customId);
+        saveCustomLibrary();
+      } else {
+        const entry = TYPES.find(x => x.type === type);
+        if (!entry) return;
+        if (!hiddenLibraryTypes.includes(type)) hiddenLibraryTypes.push(type);
+        saveHiddenLibrary();
+      }
+
+      setLibraryDeleteMode(false);
+      makeLibrary();
+      showToast('Đã xóa nút khỏi thư viện');
+    });
+
+    el.addEventListener('dblclick', () => {
+      if (libraryDeleteMode) return;
+      let displayName = null;
+      let itemType = type;
+      if (customId) {
+        itemType = 'custom';
+        displayName = label;
+      } else if (type === 'custom' || type === 'info') {
+        const isInfo = type === 'info';
+        const name = prompt(isInfo ? 'Nội dung nút thông tin:' : 'Tên chức năng:', isInfo ? 'Thông tin' : 'Chức năng của tôi');
+        if (name === null) return;
+        displayName = name.trim() || (isInfo ? 'Thông tin' : 'Chức năng');
+      }
+      pushHistory();
+      addItem(itemType, 50, 50, displayName);
+      showToast('Đã thêm ' + (displayName || label));
+    });
+
+    library.appendChild(el);
+  }
+
+  function makeLibrary() {
+    library.innerHTML = '';
+    const visibleBuiltins = TYPES.filter(t => !hiddenLibraryTypes.includes(t.type));
+    visibleBuiltins.forEach(t => addLibraryElement({ type: t.type, label: t.label }));
+    customLibrary.forEach(entry => addLibraryElement({
+      type: 'custom',
+      label: entry.label,
+      customId: entry.id
+    }));
+
+    const count = visibleBuiltins.length + customLibrary.length;
+    const cols = count > 28 ? 3 : 2;
+    const rows = Math.max(1, Math.ceil(Math.max(count, 1) / cols));
+    const font = count > 34 ? 6.5 : count > 26 ? 7.0 : count > 20 ? 7.6 : 8.3;
+    const gap = count > 28 ? 1.5 : 2.5;
+    const iconSize = count > 34 ? 8 : count > 26 ? 9 : count > 20 ? 10 : 12;
+    const iconGap = count > 28 ? 2 : 3;
+    library.style.setProperty('--library-cols', cols);
+    library.style.setProperty('--library-rows', rows);
+    library.style.setProperty('--library-font', font + 'px');
+    library.style.setProperty('--library-gap', gap + 'px');
+    library.style.setProperty('--library-icon', iconSize + 'px');
+    library.style.setProperty('--library-icon-gap', iconGap + 'px');
+    library.classList.toggle('delete-mode', libraryDeleteMode);
+  }
+
 
   function addItem(type, x, y, displayName) {
     const [w,h] = defaultSize(type);
@@ -1000,11 +1246,19 @@
   drawArea.addEventListener('drop', e => {
     e.preventDefault();
     drawArea.classList.remove('dragover');
-    const type = e.dataTransfer.getData('text/plain');
+    const payload = e.dataTransfer.getData('text/plain');
+    let type = payload;
+    let displayName = null;
+    if (payload.startsWith('customlib:')) {
+      const customId = payload.slice('customlib:'.length);
+      const entry = customLibrary.find(x => x.id === customId);
+      if (!entry) return;
+      type = 'custom';
+      displayName = entry.label;
+    }
     if (!getType(type)) return;
     const rect = drawArea.getBoundingClientRect();
-    let displayName = null;
-    if (type === 'custom') {
+    if (type === 'custom' && !displayName) {
       const name = prompt('Tên chức năng:', 'Chức năng của tôi');
       if (name === null) return;
       displayName = name.trim() || 'Chức năng';
@@ -1218,14 +1472,99 @@
   }
 
   // === Lưu / tải ===
-  function saveLocal(show = true) {
+  const QUICK_SAVE_KEY = 'gpp-drawing-v1';
+  const SAVED_PLANS_KEY = 'gpp-saved-plans-v1';
+
+  function currentStateData() {
     state.meta = getMeta();
-    localStorage.setItem('gpp-drawing-v1', JSON.stringify(state));
-    if (show) showToast('Đã lưu');
+    return {
+      items: state.items,
+      meta: state.meta,
+      dynamicLegend: state.dynamicLegend
+    };
   }
 
-  // === KHÔNG TỰ ĐỘNG PHỤC HỒI ===
-  // Chúng ta không gọi loadLocal() khi khởi động để đảm bảo trang trống.
+  function saveLocal(show = true) {
+    localStorage.setItem(QUICK_SAVE_KEY, JSON.stringify(currentStateData()));
+    if (show) showToast('Đã lưu nhanh');
+  }
+
+  function getSavedPlans() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SAVED_PLANS_KEY) || '{}');
+      return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function setSavedPlans(plans) {
+    localStorage.setItem(SAVED_PLANS_KEY, JSON.stringify(plans));
+  }
+
+  function refreshSavedPlans(preferName = '') {
+    const select = document.getElementById('savedPlanSelect');
+    if (!select) return;
+    const plans = getSavedPlans();
+    const names = Object.keys(plans).sort((a,b) => (plans[b].updatedAt || '').localeCompare(plans[a].updatedAt || ''));
+    select.innerHTML = names.length ? '' : '<option value="">— Chưa có sơ đồ —</option>';
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      const date = plans[name].updatedAt ? new Date(plans[name].updatedAt).toLocaleString('vi-VN') : '';
+      opt.textContent = date ? `${name} · ${date}` : name;
+      select.appendChild(opt);
+    });
+    if (preferName && plans[preferName]) select.value = preferName;
+  }
+
+  function saveNamedPlan() {
+    const select = document.getElementById('savedPlanSelect');
+    const suggested = select && select.value ? select.value : ((document.getElementById('business').value || '').trim() || 'Sơ đồ mới');
+    const input = prompt('Đặt tên sơ đồ để lần sau mở lại:', suggested);
+    if (input === null) return;
+    const name = input.trim();
+    if (!name) { showToast('Vui lòng nhập tên sơ đồ'); return; }
+    const plans = getSavedPlans();
+    if (plans[name] && !confirm(`Sơ đồ “${name}” đã tồn tại. Ghi đè bản cũ?`)) return;
+    plans[name] = { ...currentStateData(), updatedAt: new Date().toISOString() };
+    setSavedPlans(plans);
+    saveLocal(false);
+    refreshSavedPlans(name);
+    showToast('Đã lưu sơ đồ: ' + name);
+  }
+
+  function loadNamedPlan() {
+    const select = document.getElementById('savedPlanSelect');
+    const name = select && select.value;
+    if (!name) { showToast('Chưa chọn sơ đồ'); return; }
+    const plans = getSavedPlans();
+    const saved = plans[name];
+    if (!saved) { refreshSavedPlans(); showToast('Không tìm thấy bản lưu'); return; }
+    if ((state.items.length || Object.values(getMeta()).some(v => v !== '')) && !confirm(`Mở “${name}”? Nội dung đang chỉnh trên màn hình sẽ được thay thế.`)) return;
+    pushHistory();
+    state.items = Array.isArray(saved.items) ? JSON.parse(JSON.stringify(saved.items)) : [];
+    state.meta = saved.meta && typeof saved.meta === 'object' ? JSON.parse(JSON.stringify(saved.meta)) : {};
+    state.dynamicLegend = Array.isArray(saved.dynamicLegend) ? JSON.parse(JSON.stringify(saved.dynamicLegend)) : [];
+    state.selected = null;
+    setMeta(state.meta);
+    render();
+    showToast('Đã mở sơ đồ: ' + name);
+  }
+
+  function deleteNamedPlan() {
+    const select = document.getElementById('savedPlanSelect');
+    const name = select && select.value;
+    if (!name) { showToast('Chưa chọn bản lưu'); return; }
+    if (!confirm(`Xóa bản lưu “${name}”? Sơ đồ đang mở trên màn hình vẫn được giữ.`)) return;
+    const plans = getSavedPlans();
+    delete plans[name];
+    setSavedPlans(plans);
+    refreshSavedPlans();
+    showToast('Đã xóa bản lưu');
+  }
+
+  // Không tự động phục hồi khi khởi động: người dùng chủ động chọn sơ đồ cần mở.
 
   // === SỰ KIỆN ===
   ['business','address','manager','area','placeLocation','placeDay','placeMonth','placeYear','signerName'].forEach(id =>
@@ -1235,6 +1574,47 @@
   );
 
   document.getElementById('saveBtn').onclick = () => saveLocal(true);
+  document.getElementById('savePlanBtn').onclick = saveNamedPlan;
+  document.getElementById('loadPlanBtn').onclick = loadNamedPlan;
+  document.getElementById('deletePlanBtn').onclick = deleteNamedPlan;
+
+  document.getElementById('addLibraryBtn').onclick = () => {
+    setLibraryDeleteMode(false);
+    const name = prompt('Tên nút mới trong thư viện:', 'Nút mới');
+    if (name === null) return;
+    const label = name.trim();
+    if (!label) { showToast('Vui lòng nhập tên nút'); return; }
+    if (customLibrary.some(x => x.label.toLowerCase() === label.toLowerCase())) {
+      showToast('Tên nút này đã có trong thư viện');
+      return;
+    }
+    customLibrary.push({ id: 'lib' + Date.now().toString(36), label });
+    saveCustomLibrary();
+    makeLibrary();
+    showToast('Đã tạo nút thư viện: ' + label);
+  };
+
+  document.getElementById('deleteLibraryBtn').onclick = () => {
+    const visibleBuiltins = TYPES.filter(t => !hiddenLibraryTypes.includes(t.type));
+    if (!visibleBuiltins.length && !customLibrary.length) {
+      showToast('Thư viện không còn nút để xóa');
+      return;
+    }
+    setLibraryDeleteMode(!libraryDeleteMode);
+    if (libraryDeleteMode) showToast('Chọn bất kỳ nút nào trong thư viện để xóa');
+  };
+
+  document.getElementById('restoreLibraryBtn').onclick = () => {
+    setLibraryDeleteMode(false);
+    if (!hiddenLibraryTypes.length) {
+      showToast('Các nút mặc định đang đầy đủ');
+      return;
+    }
+    hiddenLibraryTypes = [];
+    saveHiddenLibrary();
+    makeLibrary();
+    showToast('Đã khôi phục các nút mặc định');
+  };
 
   document.getElementById('printBtn').onclick = () => {
     state.selected = null;
@@ -1412,8 +1792,10 @@
   refreshInstallButton();
 
   // === KHỞI TẠO (trang trống) ===
+  loadCustomLibrary();
   makeLibrary();
-  // KHÔNG loadLocal() -> trang trống
+  refreshSavedPlans();
+  // KHÔNG tự mở bản lưu -> người dùng chủ động chọn sơ đồ cần mở
   state.items = [];
   state.dynamicLegend = [];
   resetMeta();
